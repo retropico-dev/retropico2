@@ -109,7 +109,7 @@ bool RETRO_CALLCONV env_callback(unsigned cmd, void *data) {
 }
 
 void RETRO_CALLCONV video_update(const void *data, unsigned width, unsigned height, size_t pitch) {
-    if (!data) return;
+    if (!data || !s_retro_widget->getTexture()) return;
 
     // TODO: resize texture if needed
 
@@ -220,7 +220,7 @@ bool RetroWidget::loadRom(const std::string &path) {
     p_retro_handle->core_get_system_av_info(&m_av_info);
 
     // setup render texture
-    const auto format = video_fmt == RETRO_PIXEL_FORMAT_RGB565 ? Texture::Format::RGB565 : Texture::Format::XRGB8;
+    const auto format = video_fmt == RETRO_PIXEL_FORMAT_RGB565 ? Texture::Format::RGB565 : Texture::Format::XBGR8;
     delete p_texture;
     p_texture = new C2DTexture(Vector2i(
                                    static_cast<int>(m_av_info.geometry.base_width),
