@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+option(PLATFORM_RETROPICO "RetroPico target platform" OFF)
+
 ########################
 # LIBCROSS2D SUBMODULE
 ########################
@@ -24,6 +26,10 @@ file(GLOB SOURCES
 set(INCLUDES src)
 set(CFLAGS)
 set(LDFLAGS)
+
+if (PLATFORM_RETROPICO)
+    list(APPEND CFLAGS "-DRETROPICO")
+endif ()
 
 #####################
 # EXECUTABLE

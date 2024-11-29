@@ -17,9 +17,6 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
     // debug
     App::setPrintStats(true);
 
-    App::setRotation(90);
-    App::setPosition(screenSize.x, 0);
-
     // rendering texture
     p_retro_widget = new RetroWidget(this);
     p_retro_widget->loadCore(App::getIo()->getRomFsPath() + CORE_PATH);
