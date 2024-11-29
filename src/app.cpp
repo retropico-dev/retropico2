@@ -7,12 +7,25 @@
 using namespace c2d;
 using namespace retropico;
 
-#if 1
+//#define TEST_NES 1
+#define TEST_SNES 1
+//#define TEST_GB 1
+//#define TEST_MD 1
+
+#if TEST_NES
 #define CORE_PATH "cores/x86_64/nestopia_libretro.so"
 #define ROM_PATH "roms/nes/rom.nes"
-#else
+#elif TEST_SNES
+#define CORE_PATH "cores/x86_64/snes9x_libretro.so"
+#define ROM_PATH "roms/snes/rom.sfc"
+#elif TEST_GB
 #define CORE_PATH "cores/x86_64/gambatte_libretro.so"
 #define ROM_PATH "roms/gb/rom.gb"
+#elif TEST_MD
+#define CORE_PATH "cores/x86_64/genesis_plus_gx_libretro.so"
+#define ROM_PATH "roms/megadrive/rom.gen"
+//#define ROM_PATH "roms/sms/rom.sms"
+//#define ROM_PATH "roms/gg/rom.gg"
 #endif
 
 App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
@@ -21,9 +34,9 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
 
     // rendering texture
     p_retro_widget = new RetroWidget(this);
-    p_retro_widget->loadCore(App::getIo()->getRomFsPath() + CORE_PATH);
+    p_retro_widget->loadCore(App::getIo()->getDataPath() + CORE_PATH);
     App::add(p_retro_widget);
-    p_retro_widget->loadRom(App::getIo()->getRomFsPath() + ROM_PATH);
+    p_retro_widget->loadRom(App::getIo()->getDataPath() + ROM_PATH);
 }
 
 // onInput is only called when a key is pressed

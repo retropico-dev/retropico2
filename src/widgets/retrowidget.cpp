@@ -66,11 +66,14 @@ bool RETRO_CALLCONV env_callback(unsigned cmd, void *data) {
             video_fmt = *static_cast<retro_pixel_format *>(data);
             printf("RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: %i\n", video_fmt);
             return true;
-        case RETRO_ENVIRONMENT_SET_GEOMETRY: {
+        case RETRO_ENVIRONMENT_SET_GEOMETRY:
+        case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO: {
             const auto av = static_cast<retro_system_av_info *>(data);
-            printf("RETRO_ENVIRONMENT_SET_GEOMETRY: base: %ix%i, max: %ix%i\n",
+            s_retro_widget->setAvInfo(av);
+            printf("RETRO_ENVIRONMENT_SET_GEOMETRY: base: %ix%i, max: %ix%i, ratio: %f, fps: %f, rate: %f\n",
                    av->geometry.base_width, av->geometry.base_height,
-                   av->geometry.max_width, av->geometry.max_height);
+                   av->geometry.max_width, av->geometry.max_height,
+                   av->geometry.aspect_ratio, av->timing.fps, av->timing.sample_rate);
             return true;
         }
         case RETRO_ENVIRONMENT_GET_VARIABLE:
@@ -116,11 +119,21 @@ void RETRO_CALLCONV video_update(const void *data, unsigned width, unsigned heig
 
     const auto rect = tex->getTextureRect();
     if (rect.width != width || rect.height != height) {
+        printf("video_update: buffer: %ix%i, pitch: %lu, ", width, height, pitch);
+        tex->setUnpackRowLength(static_cast<int>(pitch) / tex->m_bpp);
         tex->setTextureRect(IntRect{0, 0, static_cast<int>(width), static_cast<int>(height)});
         tex->setSize(static_cast<float>(width), static_cast<float>(height));
+
+        //const float h = static_cast<float>(width) / s_retro_widget->getAvInfo().geometry.aspect_ratio;
+        //const float sy = static_cast<float>(height) / h;
+        //tex->setScale(1, sy);
+        s_retro_widget->setScaling();
+
+        printf("tex: %.0fx%.0f, scale: %.2fx%.2f\n", tex->getSize().x, tex->getSize().y,
+               tex->getScale().x, tex->getScale().y);
     }
 
-    tex->unlock((uint8_t *) data);
+    tex->unlock(static_cast<const uint8_t *>(data));
 }
 
 void RETRO_CALLCONV input_poll() {
@@ -193,7 +206,7 @@ bool RetroWidget::loadCore(const std::string &path) {
 
 bool RetroWidget::loadRom(const std::string &path) {
     if (!p_app->getIo()->exist(path)) {
-        printf("RetroWidget::loadRom: failed to load core (file not found: %s)\n", path.c_str());
+        printf("RetroWidget::loadRom: file not found: %s\n", path.c_str());
         return false;
     }
 
@@ -207,7 +220,7 @@ bool RetroWidget::loadRom(const std::string &path) {
     if (!m_core_info.need_fullpath) {
         game_info.size = p_app->getIo()->read(path, (char **) &game_info.data);
         if (!game_info.size) {
-            printf("RetroWidget::loadRom: could not read file...\n");
+            printf("RetroWidget::loadRom: could not read file: %s\n", path.c_str());
             return false;
         }
     }
@@ -219,13 +232,19 @@ bool RetroWidget::loadRom(const std::string &path) {
 
     p_retro_handle->core_reset();
     p_retro_handle->core_get_system_av_info(&m_av_info);
+    printf("RetroWidget::loadRom: base: %ix%i, max: %ix%i, ratio: %f, fps: %f, rate: %f\n",
+           m_av_info.geometry.base_width, m_av_info.geometry.base_height,
+           m_av_info.geometry.max_width, m_av_info.geometry.max_height,
+           m_av_info.geometry.aspect_ratio, m_av_info.timing.fps, m_av_info.timing.sample_rate);
 
     // setup render texture
     const auto format = video_fmt == RETRO_PIXEL_FORMAT_RGB565 ? Texture::Format::RGB565 : Texture::Format::XBGR8;
-    const auto w = Utility::pow2(static_cast<int>(m_av_info.geometry.base_width));
-    const auto h = Utility::pow2(static_cast<int>(m_av_info.geometry.base_height));
+    const auto w = Utility::pow2(static_cast<int>(m_av_info.geometry.max_width));
+    const auto h = Utility::pow2(static_cast<int>(m_av_info.geometry.max_height));
     delete p_texture;
     p_texture = new C2DTexture(Vector2i(w, h), format);
+    p_texture->setOrigin(Origin::Center);
+    p_texture->setPosition(m_size.x / 2, m_size.y / 2);
     RetroWidget::add(p_texture);
 
     // setup audio
@@ -239,6 +258,26 @@ bool RetroWidget::loadRom(const std::string &path) {
     m_loaded = true;
 
     return true;
+}
+
+void RetroWidget::setScaling() {
+    const Vector2f screen = getSize();
+    Vector2f scale = {1, 1};
+    const Vector2f scale_max = {
+        screen.x / p_texture->getSize().x,
+        screen.y / p_texture->getSize().y
+    };
+
+    if (m_scale_mode == ScaleMode::Full) {
+        scale.x = scale_max.x;
+        scale.y = scale_max.y;
+    } else if (m_scale_mode == ScaleMode::Fit) {
+        scale.y = scale_max.y;
+        const float size_x = p_texture->getSize().y * scale.y * m_av_info.geometry.aspect_ratio;
+        scale.x = size_x / p_texture->getSize().x;
+    }
+
+    p_texture->setScale(scale);
 }
 
 void RetroWidget::onUpdate() {
