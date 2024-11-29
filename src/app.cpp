@@ -7,11 +7,13 @@
 using namespace c2d;
 using namespace retropico;
 
-#define CORE_PATH "/cores/x86_64/nestopia_libretro.so"
-#define ROM_PATH "/roms/nes/rom.nes"
-
-//#define CORE_PATH "/cores/x86_64/gambatte_libretro.so"
-//#define ROM_PATH "/roms/nes/rom.gb"
+#if 1
+#define CORE_PATH "cores/x86_64/nestopia_libretro.so"
+#define ROM_PATH "roms/nes/rom.nes"
+#else
+#define CORE_PATH "cores/x86_64/gambatte_libretro.so"
+#define ROM_PATH "roms/gb/rom.gb"
+#endif
 
 App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
     // debug

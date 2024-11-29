@@ -32,7 +32,7 @@ std::unordered_map<std::string, std::string> env_vars = {
     //{"nestopia_audio_type", ""}
 };
 
-const std::unordered_map<std::string, unsigned> buttons = {
+const std::unordered_map<std::string, unsigned> buttons_map = {
     {"start", RETRO_DEVICE_ID_JOYPAD_START},
     {"select", RETRO_DEVICE_ID_JOYPAD_SELECT},
     {"a", RETRO_DEVICE_ID_JOYPAD_A},
@@ -109,14 +109,15 @@ bool RETRO_CALLCONV env_callback(unsigned cmd, void *data) {
 }
 
 void RETRO_CALLCONV video_update(const void *data, unsigned width, unsigned height, size_t pitch) {
-    if (!data || !s_retro_widget->getTexture()) return;
-
-    // TODO: resize texture if needed
+    if (!data) return;
 
     const auto tex = s_retro_widget->getTexture();
-    // some core have a strange behavior...
-    if (static_cast<int>(pitch) != tex->m_pitch) {
-        tex->resize(Vector2i{(int) (pitch / tex->m_bpp), (int) height});
+    if (!tex) return;
+
+    const auto rect = tex->getTextureRect();
+    if (rect.width != width || rect.height != height) {
+        tex->setTextureRect(IntRect{0, 0, static_cast<int>(width), static_cast<int>(height)});
+        tex->setSize(static_cast<float>(width), static_cast<float>(height));
     }
 
     tex->unlock((uint8_t *) data);
@@ -221,10 +222,10 @@ bool RetroWidget::loadRom(const std::string &path) {
 
     // setup render texture
     const auto format = video_fmt == RETRO_PIXEL_FORMAT_RGB565 ? Texture::Format::RGB565 : Texture::Format::XBGR8;
+    const auto w = Utility::pow2(static_cast<int>(m_av_info.geometry.base_width));
+    const auto h = Utility::pow2(static_cast<int>(m_av_info.geometry.base_height));
     delete p_texture;
-    p_texture = new C2DTexture(Vector2i(
-                                   static_cast<int>(m_av_info.geometry.base_width),
-                                   static_cast<int>(m_av_info.geometry.base_height)), format);
+    p_texture = new C2DTexture(Vector2i(w, h), format);
     RetroWidget::add(p_texture);
 
     // setup audio
