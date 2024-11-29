@@ -12,6 +12,8 @@ class App final : public c2d::C2DRenderer {
 public:
     explicit App(const c2d::Vector2f &screenSize);
 
+    static App *Instance();
+
     bool quit = false;
 
 private:

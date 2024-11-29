@@ -28,15 +28,26 @@ using namespace retropico;
 //#define ROM_PATH "roms/gg/rom.gg"
 #endif
 
+// for convenience...
+static App *s_app;
+
 App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
+    s_app = this;
+
+#ifndef NDEBUG
     // debug
     App::setPrintStats(true);
+#endif
 
     // rendering texture
     p_retro_widget = new RetroWidget(this);
     p_retro_widget->loadCore(App::getIo()->getDataPath() + CORE_PATH);
     App::add(p_retro_widget);
     p_retro_widget->loadRom(App::getIo()->getDataPath() + ROM_PATH);
+}
+
+App *App::Instance() {
+    return s_app;
 }
 
 // onInput is only called when a key is pressed

@@ -21,6 +21,7 @@ set(PROJECT_AUTHOR "cpasjuste")
 file(GLOB SOURCES
         src/*.c*
         src/widgets/*.c*
+        src/utility/*.c*
         src/libretro/*.c*
 )
 set(INCLUDES src)
@@ -30,6 +31,11 @@ set(LDFLAGS)
 if (PLATFORM_RETROPICO)
     list(APPEND CFLAGS "-DRETROPICO")
 endif ()
+
+include(FindPkgConfig)
+pkg_search_module(ZIP REQUIRED libzip)
+list(APPEND CFLAGS "-I${ZIP_INCLUDE_DIRS}")
+list(APPEND LDFLAGS ${ZIP_LIBRARIES})
 
 #####################
 # EXECUTABLE

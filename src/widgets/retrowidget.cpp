@@ -5,6 +5,8 @@
 #include "app.h"
 #include "retrowidget.h"
 
+#include <utility/utility.h>
+
 using namespace c2d;
 using namespace retropico;
 
@@ -123,10 +125,6 @@ void RETRO_CALLCONV video_update(const void *data, unsigned width, unsigned heig
         tex->setUnpackRowLength(static_cast<int>(pitch) / tex->m_bpp);
         tex->setTextureRect(IntRect{0, 0, static_cast<int>(width), static_cast<int>(height)});
         tex->setSize(static_cast<float>(width), static_cast<float>(height));
-
-        //const float h = static_cast<float>(width) / s_retro_widget->getAvInfo().geometry.aspect_ratio;
-        //const float sy = static_cast<float>(height) / h;
-        //tex->setScale(1, sy);
         s_retro_widget->setScaling();
 
         printf("tex: %.0fx%.0f, scale: %.2fx%.2f\n", tex->getSize().x, tex->getSize().y,
@@ -175,8 +173,18 @@ RetroWidget::RetroWidget(App *app) : Rectangle(app->getSize()) {
 
 bool RetroWidget::loadCore(const std::string &path) {
     if (!p_app->getIo()->exist(path)) {
-        printf("RetroWidget::loadCore: failed to load core (file not found: %s)\n", path.c_str());
-        return false;
+        // check if zipped core exists
+        const std::string zipped = c2d::Utility::removeExt(path) + ".zip";
+        if (!p_app->getIo()->exist(zipped)) {
+            printf("RetroWidget::loadCore: failed to load core (file not found: %s)\n", path.c_str());
+            return false;
+        }
+
+        printf("RetroWidget::loadCore: found zipped core, extracting... (%s)\n", zipped.c_str());
+        if (!Utility::Unzip(zipped, path)) {
+            printf("RetroWidget::loadCore: failed to load core (unzip failed: %s)\n", path.c_str());
+            return false;
+        }
     }
 
     p_retro_handle = load_core(path.c_str());
@@ -239,8 +247,8 @@ bool RetroWidget::loadRom(const std::string &path) {
 
     // setup render texture
     const auto format = video_fmt == RETRO_PIXEL_FORMAT_RGB565 ? Texture::Format::RGB565 : Texture::Format::XBGR8;
-    const auto w = Utility::pow2(static_cast<int>(m_av_info.geometry.max_width));
-    const auto h = Utility::pow2(static_cast<int>(m_av_info.geometry.max_height));
+    const auto w = c2d::Utility::pow2(static_cast<int>(m_av_info.geometry.max_width));
+    const auto h = c2d::Utility::pow2(static_cast<int>(m_av_info.geometry.max_height));
     delete p_texture;
     p_texture = new C2DTexture(Vector2i(w, h), format);
     p_texture->setOrigin(Origin::Center);
