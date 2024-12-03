@@ -8,9 +8,12 @@ using namespace c2d;
 using namespace retropico;
 
 //#define TEST_NES 1
-#define TEST_SNES 1
+//#define TEST_SNES 1
 //#define TEST_GB 1
 //#define TEST_MD 1
+//#define TEST_PCE 1
+//#define TEST_GBA 1
+#define TEST_LYNX 1
 
 #if TEST_NES
 #define CORE_PATH "cores/x86_64/nestopia_libretro.so"
@@ -26,6 +29,15 @@ using namespace retropico;
 #define ROM_PATH "roms/megadrive/rom.gen"
 //#define ROM_PATH "roms/sms/rom.sms"
 //#define ROM_PATH "roms/gg/rom.gg"
+#elif TEST_PCE
+#define CORE_PATH "cores/x86_64/mednafen_pce_fast_libretro.so"
+#define ROM_PATH "roms/pce/rom.pce"
+#elif TEST_GBA
+#define CORE_PATH "cores/x86_64/mgba_libretro.so"
+#define ROM_PATH "roms/gba/rom.gba"
+#elif TEST_LYNX
+#define CORE_PATH "cores/x86_64/handy_libretro.so"
+#define ROM_PATH "roms/lynx/rom.lnx"
 #endif
 
 // for convenience...

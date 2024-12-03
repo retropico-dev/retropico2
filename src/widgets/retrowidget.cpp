@@ -4,29 +4,10 @@
 
 #include "app.h"
 #include "retrowidget.h"
-
-#include <utility/utility.h>
+#include "utility/utility.h"
 
 using namespace c2d;
 using namespace retropico;
-
-typedef RETRO_CALLCONV void (*core_info_function)(retro_system_info *info);
-
-typedef RETRO_CALLCONV void (*core_action_function)();
-
-typedef RETRO_CALLCONV void (*core_loadg_function)(retro_game_info *game);
-
-typedef RETRO_CALLCONV void (*core_set_environment_fn)(retro_environment_t);
-
-typedef RETRO_CALLCONV void (*core_set_video_refresh_fn)(retro_video_refresh_t);
-
-typedef RETRO_CALLCONV void (*core_set_audio_sample_fn)(retro_audio_sample_t);
-
-typedef RETRO_CALLCONV void (*core_set_audio_sample_batch_fn)(retro_audio_sample_batch_t);
-
-typedef RETRO_CALLCONV void (*core_set_input_poll_fn)(retro_input_poll_t);
-
-typedef RETRO_CALLCONV void (*core_set_input_state_fn)(retro_input_state_t);
 
 RetroWidget *s_retro_widget;
 retro_pixel_format video_fmt = RETRO_PIXEL_FORMAT_RGB565;
@@ -113,15 +94,15 @@ bool RETRO_CALLCONV env_callback(unsigned cmd, void *data) {
     }
 }
 
-void RETRO_CALLCONV video_update(const void *data, unsigned width, unsigned height, size_t pitch) {
+void RETRO_CALLCONV video_update(const void *data, const unsigned width, const unsigned height, const size_t pitch) {
     if (!data) return;
 
     const auto tex = s_retro_widget->getTexture();
     if (!tex) return;
 
     const auto rect = tex->getTextureRect();
-    if (rect.width != width || rect.height != height) {
-        printf("video_update: buffer: %ix%i, pitch: %lu, ", width, height, pitch);
+    if (rect.width != static_cast<int>(width) || rect.height != static_cast<int>(height)) {
+        printf("video_update: buffer: %ix%i, pitch: %lu\n", width, height, pitch);
         tex->setUnpackRowLength(static_cast<int>(pitch) / tex->m_bpp);
         tex->setTextureRect(IntRect{0, 0, static_cast<int>(width), static_cast<int>(height)});
         tex->setSize(static_cast<float>(width), static_cast<float>(height));
@@ -269,6 +250,7 @@ bool RetroWidget::loadRom(const std::string &path) {
 }
 
 void RetroWidget::setScaling() {
+    const Vector2f tex_size = getTexture()->getSize();
     const Vector2f screen = getSize();
     Vector2f scale = {1, 1};
     const Vector2f scale_max = {
@@ -280,12 +262,24 @@ void RetroWidget::setScaling() {
         scale.x = scale_max.x;
         scale.y = scale_max.y;
     } else if (m_scale_mode == ScaleMode::Fit) {
-        scale.y = scale_max.y;
-        const float size_x = p_texture->getSize().y * scale.y * m_av_info.geometry.aspect_ratio;
-        scale.x = size_x / p_texture->getSize().x;
+        const float aspect_ratio = m_av_info.geometry.aspect_ratio;
+        const float scale_y = scale_max.y;
+        const float scale_x = (tex_size.y * scale_y * aspect_ratio) / tex_size.x;
+        if (scale_x > scale_max.x) {
+            scale.x = scale_max.x;
+            scale.y = (tex_size.x * scale.x) / (tex_size.y * aspect_ratio);
+        } else {
+            scale.x = scale_x;
+            scale.y = scale_y;
+        }
     }
 
+#ifndef NDEBUG
+    printf("RetroWidget::setScaling: %ix%i => %ix%i (%.2fx%.2f, ratio: %.2f)\n",
+           (int) tex_size.x, (int) tex_size.y, (int) (tex_size.x * scale.x), (int) (tex_size.y * scale.y),
+           scale.x, scale.y, m_av_info.geometry.aspect_ratio);
     p_texture->setScale(scale);
+#endif
 }
 
 void RetroWidget::onUpdate() {

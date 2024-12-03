@@ -8,3 +8,6 @@ data/common/datadir/roms/megadrive/*.gen
 data/common/datadir/roms/nes/*.nes
 data/common/datadir/roms/sms/*.sms
 data/common/datadir/roms/snes/*.sfc
+data/common/datadir/roms/pce/*.pce
+data/common/datadir/roms/gba/*.gba
+data/common/datadir/roms/lynx/*.lnx
