@@ -25,6 +25,10 @@ namespace retropico {
 
         bool loadRom(const std::string &path);
 
+        void unloadRom();
+
+        void unloadCore();
+
         App *getApp() const { return p_app; }
 
         c2d::Texture *getTexture() const { return p_texture; }
@@ -49,6 +53,7 @@ namespace retropico {
         c2d::C2DAudio *p_audio = nullptr;
         c2d::C2DTexture *p_texture = nullptr;
         core_functions_t *p_retro_handle = nullptr;
+        retro_game_info m_game_info{};
         retro_system_info m_core_info{};
         retro_system_av_info m_av_info{};
         ScaleMode m_scale_mode = ScaleMode::Fit;

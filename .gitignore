@@ -4,7 +4,7 @@ cmake-build*
 # exclude testing roms
 data/common/datadir/roms/gb/*.gb
 data/common/datadir/roms/gg/*.gg
-data/common/datadir/roms/megadrive/*.gen
+data/common/datadir/roms/md/*.gen
 data/common/datadir/roms/nes/*.nes
 data/common/datadir/roms/sms/*.sms
 data/common/datadir/roms/snes/*.sfc

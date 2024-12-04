@@ -131,7 +131,7 @@ size_t RETRO_CALLCONV audio_buffer(const int16_t *data, size_t frames) {
 int16_t RETRO_CALLCONV input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
     if (port != 0) return 0;
 
-    uint32_t buttons = s_retro_widget->getApp()->getInput()->getButtons();
+    const auto buttons = s_retro_widget->getApp()->getInput()->getButtons();
 
     switch (id) {
         case 2:
@@ -205,17 +205,26 @@ bool RetroWidget::loadRom(const std::string &path) {
     }
 
     // load rom file in memory
-    retro_game_info game_info = {.path = path.c_str(), .data = nullptr, .size = 0, .meta = nullptr};
+    m_game_info = {.path = path.c_str(), .data = nullptr, .size = 0, .meta = nullptr};
     if (!m_core_info.need_fullpath) {
-        game_info.size = p_app->getIo()->read(path, (char **) &game_info.data);
-        if (!game_info.size) {
+        m_game_info.size = p_app->getIo()->read(path, (char **) &m_game_info.data);
+        if (!m_game_info.size) {
+            if (m_game_info.data) {
+                free((void *) m_game_info.data);
+                m_game_info.data = nullptr;
+            }
             printf("RetroWidget::loadRom: could not read file: %s\n", path.c_str());
             return false;
         }
     }
 
-    if (!p_retro_handle->core_load_game(&game_info)) {
+    if (!p_retro_handle->core_load_game(&m_game_info)) {
         printf("RetroWidget::loadRom: retro_load_game failed...\n");
+        if (m_game_info.data) {
+            free((void *) m_game_info.data);
+            m_game_info.data = nullptr;
+            m_game_info.size = 0;
+        }
         return false;
     }
 
@@ -232,6 +241,7 @@ bool RetroWidget::loadRom(const std::string &path) {
     const auto h = c2d::Utility::pow2(static_cast<int>(m_av_info.geometry.max_height));
     delete p_texture;
     p_texture = new C2DTexture(Vector2i(w, h), format);
+    //p_texture->setShader(1);
     p_texture->setOrigin(Origin::Center);
     p_texture->setPosition(m_size.x / 2, m_size.y / 2);
     RetroWidget::add(p_texture);
@@ -247,6 +257,22 @@ bool RetroWidget::loadRom(const std::string &path) {
     m_loaded = true;
 
     return true;
+}
+
+void RetroWidget::unloadRom() {
+    if (!p_retro_handle) return;
+    p_retro_handle->core_unload_game();
+    if (m_game_info.data) {
+        free((void *) m_game_info.data);
+        m_game_info.data = nullptr;
+        m_game_info.size = 0;
+    }
+}
+
+void RetroWidget::unloadCore() {
+    if (!p_retro_handle) return;
+    unload_core(p_retro_handle);
+    p_retro_handle = nullptr;
 }
 
 void RetroWidget::setScaling() {
