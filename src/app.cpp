@@ -18,7 +18,13 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
     App::setPrintStats(true);
 #endif
 
+    App::getInput()->setRepeatDelay(INPUT_DELAY_UI);
+
+#if RETROPICO_DEVICE
+    p_config = new Config("aarch64", App::getIo()->getDataPath());
+#else
     p_config = new Config("x86_64", App::getIo()->getDataPath());
+#endif
 
     p_filer = new Filer();
     p_filer->load();
@@ -28,8 +34,63 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
     p_retro_widget = new RetroWidget(this);
     p_retro_widget->setVisibility(Visibility::Hidden);
     App::add(p_retro_widget);
-    //p_retro_widget->loadCore(App::getIo()->getDataPath() + CORE_PATH);
-    //p_retro_widget->loadRom(App::getIo()->getDataPath() + ROM_PATH);
+
+    const auto bounds = App::getLocalBounds();
+    p_menu = new Menu({bounds.left + 1, bounds.top + 1, bounds.width * 0.6f, bounds.height - 2});
+    App::add(p_menu);
+
+    // set default joystick mapping
+    const std::vector<Input::ButtonMapping> mapping = {
+        {Input::Button::Up, KEY_JOY_UP_DEFAULT},
+        {Input::Button::Down, KEY_JOY_DOWN_DEFAULT},
+        {Input::Button::Left, KEY_JOY_LEFT_DEFAULT},
+        {Input::Button::Right, KEY_JOY_RIGHT_DEFAULT},
+        {Input::Button::Select, KEY_JOY_SELECT_DEFAULT},
+        {Input::Button::Start, KEY_JOY_START_DEFAULT},
+        {Input::Button::A, KEY_JOY_A_DEFAULT},
+        {Input::Button::B, KEY_JOY_B_DEFAULT},
+        {Input::Button::X, KEY_JOY_X_DEFAULT},
+        {Input::Button::Y, KEY_JOY_Y_DEFAULT},
+        {Input::Button::LT, KEY_JOY_LT_DEFAULT},
+        {Input::Button::RT, KEY_JOY_RT_DEFAULT},
+        {Input::Button::LB, -1},
+        {Input::Button::RB, -1},
+        {Input::Button::LS, -1},
+        {Input::Button::RS, -1},
+        {Input::Button::Menu1, KEY_JOY_MENU1_DEFAULT},
+        {Input::Button::Menu2, -1}
+    };
+
+    App::getInput()->setJoystickMapping(
+        0, mapping,
+        {KEY_JOY_AXIS_LX, KEY_JOY_AXIS_LY},
+        {KEY_JOY_AXIS_RX, KEY_JOY_AXIS_RY}, 8000);
+
+#ifndef NO_KEYBOARD
+    // set default keyboard mapping
+    std::vector<Input::ButtonMapping> kb_mapping = {
+        {Input::Button::Up, KEY_KB_UP_DEFAULT},
+        {Input::Button::Down, KEY_KB_DOWN_DEFAULT},
+        {Input::Button::Left, KEY_KB_LEFT_DEFAULT},
+        {Input::Button::Right, KEY_KB_RIGHT_DEFAULT},
+        {Input::Button::Select, KEY_KB_SELECT_DEFAULT},
+        {Input::Button::Start, KEY_KB_START_DEFAULT},
+        {Input::Button::A, KEY_KB_A_DEFAULT},
+        {Input::Button::B, KEY_KB_B_DEFAULT},
+        {Input::Button::X, KEY_KB_X_DEFAULT},
+        {Input::Button::Y, KEY_KB_Y_DEFAULT},
+        {Input::Button::LT, KEY_KB_LT_DEFAULT},
+        {Input::Button::RT, KEY_KB_RT_DEFAULT},
+        {Input::Button::LB, KEY_KB_LB_DEFAULT},
+        {Input::Button::RB, KEY_KB_RB_DEFAULT},
+        {Input::Button::LS, KEY_KB_LS_DEFAULT},
+        {Input::Button::RS, KEY_KB_RS_DEFAULT},
+        {Input::Button::Menu1, SDL_SCANCODE_ESCAPE},
+        {Input::Button::Menu2, -1}
+    };
+
+    App::getInput()->setKeyboardMapping(kb_mapping);
+#endif
 }
 
 App *App::Instance() {
@@ -50,6 +111,10 @@ bool App::onInput(Input::Player *players) {
 
 // onUpdate is called every frames
 void App::onUpdate() {
+    if (p_retro_widget->isVisible() && !p_menu->isVisible()) {
+        return C2DRenderer::onUpdate();
+    }
+
     // handle auto-repeat speed
     const auto buttons = getInput()->getButtons();
     if (buttons != Input::Button::Delay) {

@@ -48,19 +48,13 @@ void Filer::load() {
     for (size_t i = 0; i < cores.size(); i++) {
         m_files.at(i) = App::Instance()->getIo()->getDirList(cores.at(i).roms_path, true, false);
         printf("%s: %lu files found\n", cores.at(i).roms_path.c_str(), m_files.at(i).size());
-        /*
-        for (int j = 0; j < 14; j++) {
-            m_files.at(i).push_back({"Super Test Rom " + std::to_string(j), "blahblah"});
-        }
-        */
     }
 
     setSelection(0);
-    redraw();
 }
 
 bool Filer::onInput(Input::Player *players) {
-    if (!isVisible()) return false;
+    if (!isVisible() || App::Instance()->getMenu()->isVisible()) return false;
 
     const auto buttons = players->buttons;
 
@@ -102,7 +96,6 @@ bool Filer::onInput(Input::Player *players) {
         int index = m_file_index + m_highlight_index - m_max_lines;
         if (index < 0) index = 0;
         setSelection(index);
-        redraw();
         return true;
     }
 
@@ -111,12 +104,10 @@ bool Filer::onInput(Input::Player *players) {
         int index = m_file_index + m_highlight_index + m_max_lines;
         if (index > size - 1) index = size - 1;
         setSelection(index);
-        redraw();
         return true;
     }
 
     if (buttons & Input::Button::A) {
-        // TODO
         const auto corePath = App::Instance()->getConfig()->getCurrentCore()->path;
         const auto file = m_files[m_current_core].at(m_file_index + m_highlight_index);
         if (!App::Instance()->getRetroWidget()->loadCore(corePath)) {
@@ -131,8 +122,13 @@ bool Filer::onInput(Input::Player *players) {
 
         setVisibility(Visibility::Hidden);
         App::Instance()->getRetroWidget()->setVisibility(Visibility::Visible);
-        //App::Instance()->getRetroWidget()->unloadRom();
-        //App::Instance()->getRetroWidget()->unloadCore();
+        App::Instance()->getInput()->setRepeatDelay(0);
+        return true;
+    }
+
+    if (buttons & Input::Button::Menu1 || buttons & Input::Button::Start || buttons & Input::Button::Select) {
+        App::Instance()->getMenu()->setVisibility(Visibility::Visible);
+        return true;
     }
 
     return RectangleShape::onInput(players);
@@ -155,6 +151,20 @@ void Filer::setSelection(const int index) {
         m_highlight_index = m_max_lines / 2;
         m_file_index = index - m_highlight_index;
     }
+
+    redraw();
+}
+
+void Filer::setCore(const int coreIndex) {
+    m_current_core = coreIndex;
+    m_file_index = 0;
+    m_highlight_index = 0;
+
+    const auto &empty = m_files[m_current_core].empty();
+    p_highlight->setVisibility(empty ? Visibility::Hidden : Visibility::Visible);
+    App::Instance()->getConfig()->setCurrentCore(m_current_core);
+
+    redraw();
 }
 
 void Filer::redraw() const {
@@ -169,15 +179,10 @@ void Filer::redraw() const {
             p_lines[i]->setText(m_files[m_current_core].at(i + m_file_index).name);
             if (i == m_highlight_index) {
                 p_lines[i]->setFillColor(Color::Orange);
-                //p_lines[i]->setScroll(true);
                 p_highlight->setPosition(p_highlight->getPosition().x, p_lines[i]->getPosition().y + 1);
             } else {
                 p_lines[i]->setFillColor(Color::Yellow);
-                //p_lines[i]->setScroll(false);
             }
         }
     }
-
-    // set config
-    //Ui::getInstance()->getConfig()->setFilerCurrentCoreIndex(m_file_index + m_highlight_index);
 }

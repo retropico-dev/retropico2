@@ -17,6 +17,8 @@ namespace retropico {
 
         void load();
 
+        void setCore(int coreIndex);
+
         bool onInput(c2d::Input::Player *players) override;
 
     private:
@@ -25,7 +27,8 @@ namespace retropico {
             explicit Line(const c2d::FloatRect &rect) : Rectangle(rect) {
                 p_text = new c2d::Text("", FONT_SIZE);
                 p_text->setOrigin(c2d::Origin::Left);
-                p_text->setPosition(3, (Line::getSize().y / 2) + 2);
+                p_text->setPosition(4, (Line::getSize().y / 2) + 2);
+                p_text->setSizeMax(Line::getSize().x - 8, Line::getSize().y);
                 p_text->setFillColor(c2d::Color::Yellow);
                 Line::add(p_text);
             }

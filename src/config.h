@@ -15,6 +15,7 @@ namespace retropico {
     public:
         struct Core {
             std::string name;
+            std::string display_name;
             std::string path;
             std::string roms_path;
         };
@@ -29,6 +30,10 @@ namespace retropico {
 
         [[nodiscard]] Core *getCurrentCore() const { return m_current_core; }
 
+        void setCurrentCore(const int coreIndex) {
+            m_current_core = &m_cores[coreIndex];
+        }
+
     private:
         std::string m_arch;
         std::string m_config_path;
@@ -36,15 +41,15 @@ namespace retropico {
         Core *m_current_core = nullptr;
 
         std::vector<Core> m_cores = {
-            {"GB", "gambatte_libretro", "gb"},
-            {"GBA", "mgba_libretro", "gba"},
-            {"NES", "nestopia_libretro", "nes"},
-            {"SNES", "snes9x_libretro", "snes"},
-            {"GG", "genesis_plus_gx_libretro", "gg"},
-            {"SMS", "genesis_plus_gx_libretro", "sms"},
-            {"MD", "genesis_plus_gx_libretro", "md"},
-            {"PCE", "mednafen_pce_fast_libretro", "pce"},
-            {"LYNX", "handy_libretro", "lynx"},
+            {"GB", "GameBoy", "gambatte_libretro", "gb"},
+            {"GBA", "GameBoy Advance", "mgba_libretro", "gba"},
+            {"NES", "NES", "nestopia_libretro", "nes"},
+            {"SNES", "SNES", "snes9x_libretro", "snes"},
+            {"GG", "GameGear", "genesis_plus_gx_libretro", "gg"},
+            {"SMS", "Master System", "genesis_plus_gx_libretro", "sms"},
+            {"MD", "MegaDrive", "genesis_plus_gx_libretro", "md"},
+            {"PCE", "PC-Engine", "mednafen_pce_fast_libretro", "pce"},
+            {"LYNX", "Lynx", "handy_libretro", "lynx"},
         };
     };
 }

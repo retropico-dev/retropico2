@@ -8,7 +8,8 @@
 #include "cross2d/c2d.h"
 #include "config.h"
 #include "filer.h"
-#include "widgets/retrowidget.h"
+#include "menu.h"
+#include "retrowidget.h"
 
 #define INPUT_DELAY_UI 200
 
@@ -22,6 +23,8 @@ public:
 
     retropico::Filer *getFiler() const { return p_filer; }
 
+    retropico::Menu *getMenu() const { return p_menu; }
+
     retropico::RetroWidget *getRetroWidget() const { return p_retro_widget; }
 
     bool quit = false;
@@ -33,6 +36,7 @@ private:
 
     retropico::Config *p_config;
     retropico::Filer *p_filer;
+    retropico::Menu *p_menu;
     retropico::RetroWidget *p_retro_widget;
     uint32_t m_buttons_old = 0;
     c2d::C2DClock m_clock;

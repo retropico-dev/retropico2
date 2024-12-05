@@ -46,6 +46,8 @@ namespace retropico {
 
         void setScaling();
 
+        bool onInput(c2d::Input::Player *players) override;
+
         void onUpdate() override;
 
     private:

@@ -10,7 +10,7 @@ add_subdirectory(libcross2d)
 ########################
 # PROJECT SETUP
 ########################
-project(app)
+project(RetroPico)
 set(VERSION_MAJOR "1")
 set(VERSION_MINOR "0")
 set(PROJECT_AUTHOR "cpasjuste")
@@ -20,7 +20,6 @@ set(PROJECT_AUTHOR "cpasjuste")
 ########################
 file(GLOB SOURCES
         src/*.c*
-        src/widgets/*.c*
         src/utility/*.c*
         src/libretro/*.c*
 )

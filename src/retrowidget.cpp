@@ -15,19 +15,19 @@ std::unordered_map<std::string, std::string> env_vars = {
     //{"nestopia_audio_type", ""}
 };
 
-const std::unordered_map<std::string, unsigned> buttons_map = {
-    {"start", RETRO_DEVICE_ID_JOYPAD_START},
-    {"select", RETRO_DEVICE_ID_JOYPAD_SELECT},
-    {"a", RETRO_DEVICE_ID_JOYPAD_A},
-    {"b", RETRO_DEVICE_ID_JOYPAD_B},
-    {"x", RETRO_DEVICE_ID_JOYPAD_X},
-    {"y", RETRO_DEVICE_ID_JOYPAD_Y},
-    {"up", RETRO_DEVICE_ID_JOYPAD_UP},
-    {"down", RETRO_DEVICE_ID_JOYPAD_DOWN},
-    {"left", RETRO_DEVICE_ID_JOYPAD_LEFT},
-    {"right", RETRO_DEVICE_ID_JOYPAD_RIGHT},
-    {"l", RETRO_DEVICE_ID_JOYPAD_L},
-    {"r", RETRO_DEVICE_ID_JOYPAD_R},
+const std::unordered_map<unsigned, unsigned> buttons_map = {
+    {RETRO_DEVICE_ID_JOYPAD_START, Input::Button::Start},
+    {RETRO_DEVICE_ID_JOYPAD_SELECT, Input::Button::Select},
+    {RETRO_DEVICE_ID_JOYPAD_A, Input::Button::A},
+    {RETRO_DEVICE_ID_JOYPAD_B, Input::Button::B},
+    {RETRO_DEVICE_ID_JOYPAD_X, Input::Button::X},
+    {RETRO_DEVICE_ID_JOYPAD_Y, Input::Button::Y},
+    {RETRO_DEVICE_ID_JOYPAD_UP, Input::Button::Up},
+    {RETRO_DEVICE_ID_JOYPAD_DOWN, Input::Button::Down},
+    {RETRO_DEVICE_ID_JOYPAD_LEFT, Input::Button::Left},
+    {RETRO_DEVICE_ID_JOYPAD_RIGHT, Input::Button::Right},
+    {RETRO_DEVICE_ID_JOYPAD_L, Input::Button::LT},
+    {RETRO_DEVICE_ID_JOYPAD_R, Input::Button::RT},
 };
 
 void RETRO_CALLCONV logging_callback(retro_log_level level, const char *fmt, ...) {
@@ -115,36 +115,26 @@ void RETRO_CALLCONV video_update(const void *data, const unsigned width, const u
     tex->unlock(static_cast<const uint8_t *>(data));
 }
 
-void RETRO_CALLCONV input_poll() {
-}
-
 void RETRO_CALLCONV single_sample(int16_t left, int16_t right) {
-    //printf("single_sample\n");
+    // TODO ?
 }
 
-size_t RETRO_CALLCONV audio_buffer(const int16_t *data, size_t frames) {
+size_t RETRO_CALLCONV audio_buffer(const int16_t *data, const size_t frames) {
     //printf("audio_buffer: %p, frames: %lu\n", data, frames);
     s_retro_widget->getAudio()->play(data, static_cast<int>(frames), Audio::SyncMode::LowLatency);
     return frames;
 }
 
+void RETRO_CALLCONV input_poll() {
+    // TODO ?
+}
+
 int16_t RETRO_CALLCONV input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
     if (port != 0) return 0;
+    if (!buttons_map.count(id)) return 0;
 
     const auto buttons = s_retro_widget->getApp()->getInput()->getButtons();
-
-    switch (id) {
-        case 2:
-            return buttons & Input::Button::Select ? static_cast<short>(1) : static_cast<short>(0);
-        case 3:
-            return buttons & Input::Button::Start ? static_cast<short>(1) : static_cast<short>(0);
-        case 0: // B
-            return buttons & Input::Button::B ? static_cast<short>(1) : static_cast<short>(0);
-        case 8: // A
-            return buttons & Input::Button::A ? static_cast<short>(1) : static_cast<short>(0);
-        default:
-            return 0;
-    }
+    return static_cast<int16_t>(buttons & buttons_map.at(id));
 }
 
 RetroWidget::RetroWidget(App *app) : Rectangle(app->getSize()) {
@@ -267,12 +257,18 @@ void RetroWidget::unloadRom() {
         m_game_info.data = nullptr;
         m_game_info.size = 0;
     }
+
+    // set loaded state
+    m_loaded = false;
 }
 
 void RetroWidget::unloadCore() {
     if (!p_retro_handle) return;
     unload_core(p_retro_handle);
     p_retro_handle = nullptr;
+
+    // set loaded state
+    m_loaded = false;
 }
 
 void RetroWidget::setScaling() {
@@ -308,8 +304,25 @@ void RetroWidget::setScaling() {
 #endif
 }
 
+bool RetroWidget::onInput(Input::Player *players) {
+    if (App::Instance()->getMenu()->isVisible()) {
+        return false;
+    }
+
+    const auto buttons = players->buttons;
+    if (buttons & Input::Button::Menu1
+        || (buttons & Input::Button::Start && buttons & Input::Button::Select)) {
+        App::Instance()->getInput()->setRepeatDelay(INPUT_DELAY_UI);
+        App::Instance()->getInput()->clear();
+        App::Instance()->getMenu()->setVisibility(Visibility::Visible);
+        return true;
+    }
+
+    return Rectangle::onInput(players);
+}
+
 void RetroWidget::onUpdate() {
-    if (p_retro_handle && m_loaded) {
+    if (!App::Instance()->getMenu()->isVisible() && p_retro_handle && m_loaded) {
         p_retro_handle->core_run();
     }
 

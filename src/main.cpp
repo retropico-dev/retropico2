@@ -8,7 +8,7 @@ using namespace c2d;
 
 int main() {
     // create main app/renderer
-#if RETROPICO
+#if RETROPICO_DEVICE
     const auto app = new App(Vector2f(240, 320));
     app->setRotation(90);
     app->setPosition(240, 0);
