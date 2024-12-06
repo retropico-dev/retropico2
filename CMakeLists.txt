@@ -20,6 +20,7 @@ set(PROJECT_AUTHOR "cpasjuste")
 ########################
 file(GLOB SOURCES
         src/*.c*
+        src/shaders/*.c*
         src/utility/*.c*
         src/libretro/*.c*
 )

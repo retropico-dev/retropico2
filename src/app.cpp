@@ -10,6 +10,10 @@ using namespace retropico;
 // for convenience...
 static App *s_app;
 
+#if defined(__GLES2__) && !defined(__GLES3__)
+extern const char *libretro_xrgb_shader;
+#endif
+
 App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
     s_app = this;
 
@@ -24,6 +28,12 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
     p_config = new Config("aarch64", App::getIo()->getDataPath());
 #else
     p_config = new Config("x86_64", App::getIo()->getDataPath());
+#endif
+
+    // add gles2 "xrgb" shader
+#if defined(__GLES2__) && !defined(__GLES3__)
+    const auto shader = new GLShader("libretro_xrgb_shader", libretro_xrgb_shader, 0, "100");
+    App::getShaderList()->add(shader);
 #endif
 
     p_filer = new Filer();

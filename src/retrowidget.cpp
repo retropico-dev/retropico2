@@ -226,12 +226,18 @@ bool RetroWidget::loadRom(const std::string &path) {
            m_av_info.geometry.aspect_ratio, m_av_info.timing.fps, m_av_info.timing.sample_rate);
 
     // setup render texture
+#if defined(__GLES2__) && !defined(__GLES3__)
+    const auto format = video_fmt == RETRO_PIXEL_FORMAT_RGB565 ? Texture::Format::RGB565 : Texture::Format::RGBA8;
+#else
     const auto format = video_fmt == RETRO_PIXEL_FORMAT_RGB565 ? Texture::Format::RGB565 : Texture::Format::XBGR8;
+#endif
     const auto w = c2d::Utility::pow2(static_cast<int>(m_av_info.geometry.max_width));
     const auto h = c2d::Utility::pow2(static_cast<int>(m_av_info.geometry.max_height));
     delete p_texture;
     p_texture = new C2DTexture(Vector2i(w, h), format);
-    //p_texture->setShader(1);
+#if defined(__GLES2__) && !defined(__GLES3__)
+    if (format == Texture::Format::RGBA8) p_texture->setShader("libretro_xrgb_shader");
+#endif
     p_texture->setOrigin(Origin::Center);
     p_texture->setPosition(m_size.x / 2, m_size.y / 2);
     RetroWidget::add(p_texture);
