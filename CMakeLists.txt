@@ -28,7 +28,7 @@ set(CFLAGS)
 set(LDFLAGS)
 
 if (PLATFORM_RETROPICO)
-    list(APPEND CFLAGS "-DRETROPICO")
+    list(APPEND CFLAGS "-DRETROPICO_DEVICE")
 endif ()
 
 include(FindPkgConfig)

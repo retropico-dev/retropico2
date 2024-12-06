@@ -68,7 +68,7 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
 
 #ifndef NO_KEYBOARD
     // set default keyboard mapping
-    std::vector<Input::ButtonMapping> kb_mapping = {
+    const std::vector<Input::ButtonMapping> kb_mapping = {
         {Input::Button::Up, KEY_KB_UP_DEFAULT},
         {Input::Button::Down, KEY_KB_DOWN_DEFAULT},
         {Input::Button::Left, KEY_KB_LEFT_DEFAULT},
