@@ -27,6 +27,10 @@ public:
 
     retropico::RetroWidget *getRetroWidget() const { return p_retro_widget; }
 
+    c2d::Vector2f getSize() override;
+
+    c2d::FloatRect getLocalBounds() const override;
+
     bool quit = false;
 
 private:

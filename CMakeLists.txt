@@ -10,7 +10,7 @@ add_subdirectory(libcross2d)
 ########################
 # PROJECT SETUP
 ########################
-project(RetroPico)
+project(retropico)
 set(VERSION_MAJOR "1")
 set(VERSION_MINOR "0")
 set(PROJECT_AUTHOR "cpasjuste")

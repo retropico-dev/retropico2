@@ -49,6 +49,20 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
     p_menu = new Menu({bounds.left + 1, bounds.top + 1, bounds.width * 0.6f, bounds.height - 2});
     App::add(p_menu);
 
+#if RETROPICO_DEVICE
+    // testing
+    p_filer->setVisibility(Visibility::Hidden);
+    p_menu->setVisibility(Visibility::Hidden);
+    p_menu->setVisibility(Visibility::Hidden);
+    const auto rom = "/home/cpasjuste/Super Mario World (USA).sfc";
+    const auto corePath = "/home/cpasjuste/dev/retropico2/cmake-build-debug/cores/aarch64/snes9x_libretro.so";
+    //const auto rom = "/home/cpasjuste/Super Mario Bros. (World).nes";
+    //const auto corePath = "/home/cpasjuste/dev/retropico2/cmake-build-debug/cores/aarch64/nestopia_libretro.so";
+    p_retro_widget->loadCore(corePath);
+    p_retro_widget->loadRom(rom);
+    p_retro_widget->setVisibility(Visibility::Visible);
+#endif
+
     // set default joystick mapping
     const std::vector<Input::ButtonMapping> mapping = {
         {Input::Button::Up, KEY_JOY_UP_DEFAULT},
@@ -105,6 +119,22 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
 
 App *App::Instance() {
     return s_app;
+}
+
+Vector2f App::getSize() {
+#if RETROPICO_DEVICE
+    return {320, 240};
+#else
+    return Renderer::getSize();
+#endif
+}
+
+FloatRect App::getLocalBounds() const {
+#if RETROPICO_DEVICE
+    return {0.f, 0.f, m_size.y, m_size.x};
+#else
+    return SDL2Renderer::getLocalBounds();
+#endif
 }
 
 // onInput is only called when a key is pressed
