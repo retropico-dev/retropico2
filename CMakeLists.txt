@@ -54,4 +54,4 @@ include(libcross2d/cmake/targets.cmake)
 # install
 #####################
 install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION bin)
-#install(DIRECTORY ${CMAKE_BINARY_DIR}/data_datadir )
+install(DIRECTORY ${CMAKE_BINARY_DIR}/data_datadir share/retropico)
