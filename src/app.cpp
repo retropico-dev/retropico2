@@ -55,10 +55,10 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
     p_filer->setVisibility(Visibility::Hidden);
     p_menu->setVisibility(Visibility::Hidden);
     p_menu->setVisibility(Visibility::Hidden);
-    const auto rom = "/home/cpasjuste/Super Mario World (USA).sfc";
-    const auto corePath = "/home/cpasjuste/dev/retropico2/cmake-build-debug/cores/aarch64/snes9x_libretro.so";
-    //const auto rom = "/home/cpasjuste/Super Mario Bros. (World).nes";
-    //const auto corePath = "/home/cpasjuste/dev/retropico2/cmake-build-debug/cores/aarch64/nestopia_libretro.so";
+    const auto rom = "/root/Super Mario World (USA).sfc";
+    const auto corePath = "/usr/share/retropico/cores/aarch64/snes9x_libretro.so";
+    //const auto rom = "/root/Super Mario Bros. (World).nes";
+    //const auto corePath = "/usr/share/retropico/cores/aarch64/nestopia_libretro.so";
     p_retro_widget->loadCore(corePath);
     p_retro_widget->loadRom(rom);
     p_retro_widget->setVisibility(Visibility::Visible);
