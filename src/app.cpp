@@ -25,6 +25,7 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
     App::getInput()->setRepeatDelay(INPUT_DELAY_UI);
 
 #if RETROPICO_DEVICE
+    App::getIo()->setDataPath("/usr/share/retropico/");
     p_config = new Config("aarch64", App::getIo()->getDataPath());
 #else
     p_config = new Config("x86_64", App::getIo()->getDataPath());
