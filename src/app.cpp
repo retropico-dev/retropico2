@@ -48,21 +48,8 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
 
     const auto bounds = App::getLocalBounds();
     p_menu = new Menu({bounds.left + 1, bounds.top + 1, bounds.width * 0.6f, bounds.height - 2});
+    p_menu->setVisibility(Visibility::Hidden);
     App::add(p_menu);
-
-#if RETROPICO_DEVICE
-    // testing
-    p_filer->setVisibility(Visibility::Hidden);
-    p_menu->setVisibility(Visibility::Hidden);
-    p_menu->setVisibility(Visibility::Hidden);
-    const auto rom = "/root/Super Mario World (USA).sfc";
-    const auto corePath = "/usr/share/retropico/cores/aarch64/snes9x_libretro.so";
-    //const auto rom = "/root/Super Mario Bros. (World).nes";
-    //const auto corePath = "/usr/share/retropico/cores/aarch64/nestopia_libretro.so";
-    p_retro_widget->loadCore(corePath);
-    p_retro_widget->loadRom(rom);
-    p_retro_widget->setVisibility(Visibility::Visible);
-#endif
 
     // set default joystick mapping
     const std::vector<Input::ButtonMapping> mapping = {
@@ -147,13 +134,13 @@ bool App::onInput(Input::Player *players) {
         quit = true;
     }
 
-    return C2DRenderer::onInput(players);
+    return Renderer::onInput(players);
 }
 
 // onUpdate is called every frames
 void App::onUpdate() {
     if (p_retro_widget->isVisible() && !p_menu->isVisible()) {
-        return C2DRenderer::onUpdate();
+        return Renderer::onUpdate();
     }
 
     // handle auto-repeat speed
@@ -175,5 +162,5 @@ void App::onUpdate() {
         }
     }
 
-    C2DRenderer::onUpdate();
+    Renderer::onUpdate();
 }

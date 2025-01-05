@@ -143,6 +143,8 @@ RetroWidget::RetroWidget(App *app) : Rectangle(app->getSize()) {
 }
 
 bool RetroWidget::loadCore(const std::string &path) {
+    printf("RetroWidget::loadCore: %s\n", path.c_str());
+
     if (!p_app->getIo()->exist(path)) {
         // check if zipped core exists
         const std::string zipped = c2d::Utility::removeExt(path) + ".zip";
@@ -184,6 +186,8 @@ bool RetroWidget::loadCore(const std::string &path) {
 }
 
 bool RetroWidget::loadRom(const std::string &path) {
+    printf("RetroWidget::loadRom: %s\n", path.c_str());
+
     if (!p_app->getIo()->exist(path)) {
         printf("RetroWidget::loadRom: file not found: %s\n", path.c_str());
         return false;
