@@ -15,7 +15,7 @@
 
 class App final : public c2d::C2DRenderer {
 public:
-    explicit App(const c2d::Vector2f &screenSize);
+    explicit App(const c2d::Vector2f &screenSize, bool rotate = false);
 
     static App *Instance();
 
@@ -44,6 +44,7 @@ private:
     retropico::RetroWidget *p_retro_widget;
     uint32_t m_buttons_old = 0;
     c2d::C2DClock m_clock;
+    bool m_rotate = false;
 };
 
 #endif //C2D_APP_H

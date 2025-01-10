@@ -14,8 +14,14 @@ static App *s_app;
 extern const char *libretro_xrgb_shader;
 #endif
 
-App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
+App::App(const Vector2f &screenSize, const bool rotate) : C2DRenderer(screenSize) {
     s_app = this;
+    m_rotate = rotate;
+
+    if (m_rotate) {
+        App::setRotation(90);
+        App::setPosition(screenSize.y, 0);
+    }
 
 #ifndef NDEBUG
     // debug
@@ -24,14 +30,20 @@ App::App(const Vector2f &screenSize) : C2DRenderer(screenSize) {
 
     App::getInput()->setRepeatDelay(INPUT_DELAY_UI);
 
-#if RETROPICO_DEVICE
+    // set data path for release mode (TODO: use config)
+#ifdef NDEBUG
     App::getIo()->setDataPath("/usr/share/retropico/");
-    p_config = new Config("aarch64", App::getIo()->getDataPath());
-#else
-    p_config = new Config("x86_64", App::getIo()->getDataPath());
 #endif
 
-    // add gles2 "xrgb" shader
+    App::getIo()->setDataPath("/home/cpasjuste/.retropico/");
+
+#if defined(__x86_64__)
+    p_config = new Config("x86_64", App::getIo()->getDataPath());
+#else
+    p_config = new Config("aarch64", App::getIo()->getDataPath());
+#endif
+
+    // add gles2 custom "xrgb" shader
 #if defined(__GLES2__) && !defined(__GLES3__)
     const auto shader = new GLShader("libretro_xrgb_shader", libretro_xrgb_shader, 0, "100");
     App::getShaderList()->add(shader);
@@ -110,19 +122,13 @@ App *App::Instance() {
 }
 
 Vector2f App::getSize() {
-#if RETROPICO_DEVICE
-    return {320, 240};
-#else
-    return Renderer::getSize();
-#endif
+    return m_rotate ? Vector2f{320, 240} : Renderer::getSize();
 }
 
 FloatRect App::getLocalBounds() const {
-#if RETROPICO_DEVICE
-    return {0.f, 0.f, m_size.y, m_size.x};
-#else
-    return SDL2Renderer::getLocalBounds();
-#endif
+    return m_rotate
+               ? FloatRect{0.f, 0.f, m_size.y, m_size.x}
+               : SDL2Renderer::getLocalBounds();
 }
 
 // onInput is only called when a key is pressed

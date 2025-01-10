@@ -108,8 +108,13 @@ bool Filer::onInput(Input::Player *players) {
     }
 
     if (buttons & Input::Button::A) {
+        const int index = m_file_index + m_highlight_index;
+        if (m_files.empty() || index >= m_files.size()) {
+            return true;
+        }
+
         const auto corePath = App::Instance()->getConfig()->getCurrentCore()->path;
-        const auto file = m_files[m_current_core].at(m_file_index + m_highlight_index);
+        const auto file = m_files[m_current_core].at(index);
         if (!App::Instance()->getRetroWidget()->loadCore(corePath)) {
             printf("Filer::onInput: failed to load core '%s'\n", corePath.c_str());
             return true;

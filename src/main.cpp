@@ -7,19 +7,27 @@
 
 using namespace c2d;
 
+static bool rotate = false;
+
 int main(const int argc, char *argv[]) {
+    App *app;
+
     // parse command line arguments
     int opt;
     std::string core, rom;
-    while ((opt = getopt(argc, argv, "c:r:")) != -1) {
+    while ((opt = getopt(argc, argv, "c:g:r")) != -1) {
         switch (opt) {
             case 'c':
                 core = optarg;
                 printf("core: %s\n", optarg);
                 break;
-            case 'r':
+            case 'g':
                 rom = optarg;
-                printf("rom: %s\n", optarg);
+                printf("game: %s\n", optarg);
+                break;
+            case 'r':
+                printf("rotation enabled\n");
+                rotate = true;
                 break;
             default:
                 break;
@@ -27,22 +35,18 @@ int main(const int argc, char *argv[]) {
     }
 
     // create main app/renderer
-#if RETROPICO_DEVICE
-    const auto app = new App(Vector2f(240, 320));
-    app->setRotation(90);
-    app->setPosition(240, 0);
-#else
-    const auto app = new App(Vector2f(320, 240));
-#endif
+    if (rotate) {
+        app = new App(Vector2f(240, 320), true);
+    } else {
+        app = new App(Vector2f(320, 240));
+    }
 
     // load core and rom from command line if requested
     if (!core.empty() && !rom.empty()) {
-        if (app->getRetroWidget()->loadCore(core)) {
-            if (app->getRetroWidget()->loadRom(rom)) {
-                app->getFiler()->setVisibility(Visibility::Hidden);
-                app->getMenu()->setVisibility(Visibility::Hidden);
-                app->getRetroWidget()->setVisibility(Visibility::Visible);
-            }
+        if (app->getRetroWidget()->loadCore(core) && app->getRetroWidget()->loadRom(rom)) {
+            app->getFiler()->setVisibility(Visibility::Hidden);
+            app->getMenu()->setVisibility(Visibility::Hidden);
+            app->getRetroWidget()->setVisibility(Visibility::Visible);
         }
     }
 
