@@ -20,7 +20,7 @@ App::App(const Vector2f &screenSize, const bool rotate) : C2DRenderer(screenSize
 
     if (m_rotate) {
         App::setRotation(90);
-        App::setPosition(screenSize.y, 0);
+        App::setPosition(screenSize.x, 0);
     }
 
 #ifndef NDEBUG
@@ -34,8 +34,6 @@ App::App(const Vector2f &screenSize, const bool rotate) : C2DRenderer(screenSize
 #ifdef NDEBUG
     App::getIo()->setDataPath("/usr/share/retropico/");
 #endif
-
-    App::getIo()->setDataPath("/home/cpasjuste/.retropico/");
 
 #if defined(__x86_64__)
     p_config = new Config("x86_64", App::getIo()->getDataPath());
