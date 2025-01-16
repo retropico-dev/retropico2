@@ -109,7 +109,7 @@ bool Filer::onInput(Input::Player *players) {
 
     if (buttons & Input::Button::A) {
         const int index = m_file_index + m_highlight_index;
-        if (m_files.empty() || index >= m_files.size()) {
+        if (m_files.empty() || index >= static_cast<int>(m_files.size())) {
             return true;
         }
 

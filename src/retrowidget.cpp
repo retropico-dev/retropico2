@@ -146,18 +146,8 @@ bool RetroWidget::loadCore(const std::string &path) {
     printf("RetroWidget::loadCore: %s\n", path.c_str());
 
     if (!p_app->getIo()->exist(path)) {
-        // check if zipped core exists
-        const std::string zipped = c2d::Utility::removeExt(path) + ".zip";
-        if (!p_app->getIo()->exist(zipped)) {
-            printf("RetroWidget::loadCore: failed to load core (file not found: %s)\n", path.c_str());
-            return false;
-        }
-
-        printf("RetroWidget::loadCore: found zipped core, extracting... (%s)\n", zipped.c_str());
-        if (!Utility::Unzip(zipped, path)) {
-            printf("RetroWidget::loadCore: failed to load core (unzip failed: %s)\n", path.c_str());
-            return false;
-        }
+        printf("RetroWidget::loadCore: failed to load core (file not found: %s)\n", path.c_str());
+        return false;
     }
 
     p_retro_handle = load_core(path.c_str());

@@ -28,18 +28,8 @@ App::App(const Vector2f &screenSize, const bool rotate) : C2DRenderer(screenSize
     App::setPrintStats(true);
 #endif
 
-    App::getInput()->setRepeatDelay(INPUT_DELAY_UI);
-
-    // set data path for release mode (TODO: use config)
-#ifdef NDEBUG
-    App::getIo()->setDataPath("/usr/share/retropico/");
-#endif
-
-#if defined(__x86_64__)
-    p_config = new Config("x86_64", App::getIo()->getDataPath());
-#else
-    p_config = new Config("aarch64", App::getIo()->getDataPath());
-#endif
+    // load config
+    p_config = new Config(App::getIo());
 
     // add gles2 custom "xrgb" shader
 #if defined(__GLES2__) && !defined(__GLES3__)
@@ -113,6 +103,8 @@ App::App(const Vector2f &screenSize, const bool rotate) : C2DRenderer(screenSize
 
     App::getInput()->setKeyboardMapping(kb_mapping);
 #endif
+
+    App::getInput()->setRepeatDelay(INPUT_DELAY_UI);
 }
 
 App *App::Instance() {

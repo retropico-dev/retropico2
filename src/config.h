@@ -7,8 +7,7 @@
 
 #include <string>
 #include <vector>
-
-#define C2D_CONFIG_ID_SYS_PATH 0
+#include "cross2d/skeleton/io.h"
 
 namespace retropico {
     class Config {
@@ -20,11 +19,11 @@ namespace retropico {
             std::string roms_path;
         };
 
-        explicit Config(const std::string &arch, const std::string &systemPath);
-
-        [[nodiscard]] std::string getConfigPath() const { return m_config_path; }
+        explicit Config(c2d::Io *io);
 
         [[nodiscard]] std::string getSystemPath() const { return m_system_path; }
+
+        [[nodiscard]] std::string getConfigPath() const { return m_system_path + "/config.json"; }
 
         [[nodiscard]] std::vector<Core> getCores() const { return m_cores; }
 
@@ -35,21 +34,19 @@ namespace retropico {
         }
 
     private:
-        std::string m_arch;
-        std::string m_config_path;
         std::string m_system_path;
         Core *m_current_core = nullptr;
 
         std::vector<Core> m_cores = {
-            {"GB", "GameBoy", "gambatte_libretro", "gb"},
-            {"GBA", "GameBoy Advance", "mgba_libretro", "gba"},
-            {"NES", "NES", "nestopia_libretro", "nes"},
-            {"SNES", "SNES", "snes9x_libretro", "snes"},
-            {"GG", "GameGear", "genesis_plus_gx_libretro", "gg"},
-            {"SMS", "Master System", "genesis_plus_gx_libretro", "sms"},
-            {"MD", "MegaDrive", "genesis_plus_gx_libretro", "md"},
-            {"PCE", "PC-Engine", "mednafen_pce_fast_libretro", "pce"},
-            {"LYNX", "Lynx", "handy_libretro", "lynx"},
+            {"GB", "GameBoy", "gambatte_libretro.so", "gb"},
+            {"GBA", "GameBoy Advance", "mgba_libretro.so", "gba"},
+            {"NES", "NES", "nestopia_libretro.so", "nes"},
+            {"SNES", "SNES", "snes9x_libretro.so", "snes"},
+            {"GG", "GameGear", "genesis_plus_gx_libretro.so", "gg"},
+            {"SMS", "Master System", "genesis_plus_gx_libretro.so", "sms"},
+            {"MD", "MegaDrive", "genesis_plus_gx_libretro.so", "md"},
+            {"PCE", "PC-Engine", "mednafen_pce_libretro.so", "pce"},
+            {"LYNX", "Lynx", "handy_libretro.so", "lynx"},
         };
     };
 }
