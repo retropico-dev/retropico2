@@ -21,9 +21,11 @@ Menu::Line::Line(const FloatRect &rect) : RectangleShape(rect) {
 
     // add text
     p_text = new Text("dummy", static_cast<int>(Line::getSize().y - 16));
-    p_text->setPosition(p_sprite->getSize().x + 6, Line::getSize().y / 2);
+    p_text->setPosition(p_sprite->getSize().x + 6, (Line::getSize().y / 2) - 2); // minus outline
     p_text->setOrigin(Origin::Left);
     p_text->setFillColor(Color::Yellow);
+    p_text->setOutlineColor(Color::Black);
+    p_text->setOutlineThickness(1);
     Line::add(p_text);
 }
 
@@ -33,13 +35,14 @@ void Menu::Line::setIcon(Texture *texture) {
         getSize().x / texture->getSize().x,
         getSize().y / texture->getSize().y);
     p_sprite->setScale(scaling, scaling);
-    p_text->setPosition(p_sprite->getSize().x * p_sprite->getScale().x + 16, Line::getSize().y / 2);
+    p_text->setPosition(p_sprite->getSize().x * p_sprite->getScale().x + 16,
+                        (Line::getSize().y / 2) - 2); // minus outline
 }
 
 Menu::Menu(const FloatRect &rect) : RectangleShape(rect) {
     Menu::setFillColor(Color::GrayDark);
-    Menu::setOutlineColor(Color::Orange);
-    Menu::setOutlineThickness(1);
+    Menu::setOutlineColor(Color::Red);
+    Menu::setOutlineThickness(2);
     Menu::setAlpha(240);
 
     // load icons
@@ -166,8 +169,8 @@ bool Menu::onInput(Input::Player *players) {
     }
 
     if (buttons & Input::Button::Menu1 ||
-        buttons & Input::Button::A || buttons & Input::Button::B
-        || buttons & Input::Button::Start || buttons & Input::Button::Select) {
+        buttons & Input::Button::A || buttons & Input::Button::B ||
+        buttons & Input::Button::Start || buttons & Input::Button::Select) {
         App::Instance()->getInput()->clear();
         setVisibility(Visibility::Hidden);
         return true;

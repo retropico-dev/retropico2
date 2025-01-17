@@ -9,9 +9,12 @@
 using namespace c2d;
 using namespace retropico;
 
-RetroWidget *s_retro_widget;
-retro_pixel_format video_fmt = RETRO_PIXEL_FORMAT_RGB565;
-std::unordered_map<std::string, std::string> env_vars = {
+static RetroWidget *s_retro_widget;
+static char s_syspath[PATH_MAX];
+static char s_savepath[PATH_MAX];
+static retro_pixel_format video_fmt = RETRO_PIXEL_FORMAT_RGB565;
+static std::unordered_map<std::string, std::string> env_vars = {
+    {"mgba_use_bios", "1"}
     //{"nestopia_audio_type", ""}
 };
 
@@ -67,11 +70,23 @@ bool RETRO_CALLCONV env_callback(unsigned cmd, void *data) {
                 return true;
             }
             return false;
-        case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-        case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-            printf("RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY\n");
-            *static_cast<const char **>(data) = "./retrosys";
+        case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY: {
+            strncpy(s_syspath, (s_retro_widget->getApp()->getConfig()->getSystemPath()
+                                + "/system").c_str(), PATH_MAX - 1);
+            s_retro_widget->getApp()->getIo()->create(s_syspath);
+            *static_cast<const char **>(data) = s_syspath;
+            printf("RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY: %s\n", s_syspath);
             return true;
+        }
+        case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: {
+            const std::string core = c2d::Utility::toLower(s_retro_widget->getCoreInfo().library_name);
+            strncpy(s_savepath, (s_retro_widget->getApp()->getConfig()->getSystemPath()
+                                 + "/system/" + core).c_str(),PATH_MAX - 1);
+            s_retro_widget->getApp()->getIo()->create(s_savepath);
+            *static_cast<const char **>(data) = s_savepath;
+            printf("RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: %s\n", s_savepath);
+            return true;
+        }
         case RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY:
             return true;
         case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
@@ -87,7 +102,7 @@ bool RETRO_CALLCONV env_callback(unsigned cmd, void *data) {
             return true;
         case RETRO_ENVIRONMENT_SET_MESSAGE:
         case RETRO_ENVIRONMENT_SET_MESSAGE_EXT:
-            printf("[Core message] %s\n", static_cast<retro_message *>(data)->msg);
+            printf("[CORE] %s\n", static_cast<retro_message *>(data)->msg);
             return true;
         default:
             return false;
@@ -130,20 +145,25 @@ void RETRO_CALLCONV input_poll() {
 }
 
 int16_t RETRO_CALLCONV input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
-    if (port != 0) return 0;
-    if (!buttons_map.count(id)) return 0;
+    if (port != 0 || !buttons_map.count(id)) return 0;
 
     const auto buttons = s_retro_widget->getApp()->getInput()->getButtons();
     return static_cast<int16_t>(buttons & buttons_map.at(id));
 }
 
 RetroWidget::RetroWidget(App *app) : Rectangle(app->getSize()) {
-    p_app = app;
     s_retro_widget = this;
+    p_app = app;
 }
 
 bool RetroWidget::loadCore(const std::string &path) {
     printf("RetroWidget::loadCore: %s\n", path.c_str());
+
+    if (m_core_path == path) {
+        // assume core is already loaded...
+        printf("RetroWidget::loadCore: already loaded...\n");
+        return true;
+    }
 
     if (!p_app->getIo()->exist(path)) {
         printf("RetroWidget::loadCore: failed to load core (file not found: %s)\n", path.c_str());
@@ -171,6 +191,7 @@ bool RetroWidget::loadCore(const std::string &path) {
 
     // init core
     p_retro_handle->core_init();
+    m_core_path = path;
 
     return true;
 }
@@ -214,6 +235,11 @@ bool RetroWidget::loadRom(const std::string &path) {
 
     p_retro_handle->core_reset();
     p_retro_handle->core_get_system_av_info(&m_av_info);
+    if (m_av_info.geometry.aspect_ratio == 0.0f) {
+        m_av_info.geometry.aspect_ratio =
+                static_cast<float>(m_av_info.geometry.base_width) /
+                static_cast<float>(m_av_info.geometry.base_height);
+    }
     printf("RetroWidget::loadRom: base: %ix%i, max: %ix%i, ratio: %f, fps: %f, rate: %f\n",
            m_av_info.geometry.base_width, m_av_info.geometry.base_height,
            m_av_info.geometry.max_width, m_av_info.geometry.max_height,
@@ -232,6 +258,7 @@ bool RetroWidget::loadRom(const std::string &path) {
 #if defined(__GLES2__) && !defined(__GLES3__)
     if (format == Texture::Format::RGBA8) p_texture->setShader("libretro_xrgb_shader");
 #endif
+    p_texture->setFilter(Texture::Filter::Linear);
     p_texture->setOrigin(Origin::Center);
     p_texture->setPosition(m_size.x / 2, m_size.y / 2);
     RetroWidget::add(p_texture);
@@ -250,10 +277,13 @@ bool RetroWidget::loadRom(const std::string &path) {
 }
 
 void RetroWidget::unloadRom() {
+    printf("RetroWidget::unloadRom\n");
+
     if (!p_retro_handle) return;
+
     p_retro_handle->core_unload_game();
     if (m_game_info.data) {
-        free((void *) m_game_info.data);
+        free(const_cast<void *>(m_game_info.data));
         m_game_info.data = nullptr;
         m_game_info.size = 0;
     }
@@ -263,12 +293,16 @@ void RetroWidget::unloadRom() {
 }
 
 void RetroWidget::unloadCore() {
+    printf("RetroWidget::unloadCore\n");
+
     if (!p_retro_handle) return;
+
     unload_core(p_retro_handle);
     p_retro_handle = nullptr;
 
     // set loaded state
     m_loaded = false;
+    m_core_path.clear();
 }
 
 void RetroWidget::setScaling() {
@@ -310,11 +344,10 @@ bool RetroWidget::onInput(Input::Player *players) {
     }
 
     const auto buttons = players->buttons;
-    if (buttons & Input::Button::Menu1
-        || (buttons & Input::Button::Start && buttons & Input::Button::Select)) {
+    if (buttons & Input::Button::Start && buttons & Input::Button::Select) {
         App::Instance()->getInput()->setRepeatDelay(INPUT_DELAY_UI);
         App::Instance()->getInput()->clear();
-        App::Instance()->getMenu()->setVisibility(Visibility::Visible);
+        App::Instance()->getFiler()->setVisibility(Visibility::Visible);
         return true;
     }
 
@@ -322,7 +355,8 @@ bool RetroWidget::onInput(Input::Player *players) {
 }
 
 void RetroWidget::onUpdate() {
-    if (!App::Instance()->getMenu()->isVisible() && p_retro_handle && m_loaded) {
+    if (!App::Instance()->getFiler()->isVisible()
+        && !App::Instance()->getMenu()->isVisible() && p_retro_handle && m_loaded) {
         p_retro_handle->core_run();
     }
 

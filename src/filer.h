@@ -25,11 +25,13 @@ namespace retropico {
         class Line final : public c2d::Rectangle {
         public:
             explicit Line(const c2d::FloatRect &rect) : Rectangle(rect) {
-                p_text = new c2d::Text("", FONT_SIZE);
+                p_text = new c2d::Text("SQDsqqtP", FONT_SIZE);
                 p_text->setOrigin(c2d::Origin::Left);
-                p_text->setPosition(4, (Line::getSize().y / 2) + 2);
-                p_text->setSizeMax(Line::getSize().x - 8, Line::getSize().y);
+                p_text->setPosition(4, (Line::getSize().y / 2) - 2); // minus outline
+                p_text->setSizeMax(Line::getSize().x - 16, Line::getSize().y);
                 p_text->setFillColor(c2d::Color::Yellow);
+                p_text->setOutlineColor(c2d::Color::Black);
+                p_text->setOutlineThickness(1);
                 Line::add(p_text);
             }
 

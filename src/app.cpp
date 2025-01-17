@@ -37,17 +37,26 @@ App::App(const Vector2f &screenSize, const bool rotate) : C2DRenderer(screenSize
     App::getShaderList()->add(shader);
 #endif
 
-    p_filer = new Filer();
-    p_filer->load();
-    App::add(p_filer);
+    // custom fonts
+    p_font = new C2DFont();
+    p_font->loadFromFile(App::getIo()->getDataPath() + "res/fonts/default.ttf");
+    App::setFont(p_font);
 
     // rendering texture
     p_retro_widget = new RetroWidget(this);
     p_retro_widget->setVisibility(Visibility::Hidden);
     App::add(p_retro_widget);
 
+    p_filer = new Filer();
+    p_filer->load();
+    App::add(p_filer);
+
     const auto bounds = App::getLocalBounds();
-    p_menu = new Menu({bounds.left + 1, bounds.top + 1, bounds.width * 0.6f, bounds.height - 2});
+    p_menu = new Menu({
+        bounds.left + bounds.width + 1, bounds.height / 2,
+        bounds.width * 0.32f, bounds.height * 0.8f
+    });
+    p_menu->setOrigin(Origin::Right);
     p_menu->setVisibility(Visibility::Hidden);
     App::add(p_menu);
 

@@ -42,6 +42,7 @@ private:
     retropico::Filer *p_filer;
     retropico::Menu *p_menu;
     retropico::RetroWidget *p_retro_widget;
+    c2d::Font *p_font;
     uint32_t m_buttons_old = 0;
     c2d::C2DClock m_clock;
     bool m_rotate = false;

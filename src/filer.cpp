@@ -11,11 +11,12 @@ using namespace retropico;
 Filer::Filer() : RectangleShape(Vector2f()) {
     Filer::setSize({App::Instance()->getSize().x - 2, App::Instance()->getSize().y - 2});
     Filer::setPosition({1, 1});
-    Filer::setFillColor(Color::Transparent);
+    Filer::setFillColor(Color::GrayDark);
+    Filer::setAlpha(200);
     Filer::setOutlineColor(Color::Red);
     Filer::setOutlineThickness(1);
 
-    m_line_height = FONT_SIZE + 2; // font height + margin
+    m_line_height = FONT_SIZE + 6; // font height + margin
     m_max_lines = static_cast<int>(Filer::getSize().y / static_cast<float>(m_line_height));
     if (static_cast<float>(m_max_lines * m_line_height) < Filer::getSize().y) {
         m_line_height = static_cast<int>(Filer::getSize().y / static_cast<float>(m_max_lines));
@@ -109,12 +110,22 @@ bool Filer::onInput(Input::Player *players) {
 
     if (buttons & Input::Button::A) {
         const int index = m_file_index + m_highlight_index;
-        if (m_files.empty() || index >= static_cast<int>(m_files.size())) {
+        if (m_files.empty() || index >= static_cast<int>(m_files[m_current_core].size())) {
             return true;
         }
 
         const auto corePath = App::Instance()->getConfig()->getCurrentCore()->path;
         const auto file = m_files[m_current_core].at(index);
+        // check if a rom is loaded
+        if (App::Instance()->getRetroWidget()->isLoaded()) {
+            // unload rom
+            App::Instance()->getRetroWidget()->unloadRom();
+            // unload core if changed/needed
+            if (App::Instance()->getRetroWidget()->getCorePath() != corePath) {
+                App::Instance()->getRetroWidget()->unloadCore();
+            }
+        }
+
         if (!App::Instance()->getRetroWidget()->loadCore(corePath)) {
             printf("Filer::onInput: failed to load core '%s'\n", corePath.c_str());
             return true;
