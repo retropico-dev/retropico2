@@ -4,6 +4,9 @@
 
 #include "app.h"
 #include "retrowidget.h"
+
+#include <unistd.h>
+
 #include "utility/utility.h"
 
 using namespace c2d;
@@ -79,10 +82,6 @@ bool RETRO_CALLCONV env_callback(unsigned cmd, void *data) {
             return true;
         }
         case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: {
-            const std::string core = c2d::Utility::toLower(s_retro_widget->getCoreInfo().library_name);
-            strncpy(s_savepath, (s_retro_widget->getApp()->getConfig()->getSystemPath()
-                                 + "/system/" + core).c_str(),PATH_MAX - 1);
-            s_retro_widget->getApp()->getIo()->create(s_savepath);
             *static_cast<const char **>(data) = s_savepath;
             printf("RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: %s\n", s_savepath);
             return true;
@@ -177,21 +176,26 @@ bool RetroWidget::loadCore(const std::string &path) {
     }
 
     // get core info
-    p_retro_handle->core_get_info(&m_core_info);
+    p_retro_handle->retro_get_info(&m_core_info);
     printf("RetroWidget::loadCore: loaded %s version %s (need_fullpath: %i)\n",
            m_core_info.library_name, m_core_info.library_version, m_core_info.need_fullpath);
 
     // set callbacks
-    p_retro_handle->core_set_env_function(&env_callback);
-    p_retro_handle->core_set_video_refresh_function(&video_update);
-    p_retro_handle->core_set_audio_sample_function(&single_sample);
-    p_retro_handle->core_set_audio_sample_batch_function(&audio_buffer);
-    p_retro_handle->core_set_input_poll_function(&input_poll);
-    p_retro_handle->core_set_input_state_function(&input_state);
+    p_retro_handle->retro_set_env_function(&env_callback);
+    p_retro_handle->retro_set_video_refresh_function(&video_update);
+    p_retro_handle->retro_set_audio_sample_function(&single_sample);
+    p_retro_handle->retro_set_audio_sample_batch_function(&audio_buffer);
+    p_retro_handle->retro_set_input_poll_function(&input_poll);
+    p_retro_handle->retro_set_input_state_function(&input_state);
 
     // init core
-    p_retro_handle->core_init();
+    p_retro_handle->retro_init();
     m_core_path = path;
+
+    // set save (sram) path
+    strncpy(s_savepath, (p_app->getConfig()->getSystemPath()
+                         + "/system/" + m_core_info.library_name + "/").c_str(),PATH_MAX - 1);
+    p_app->getIo()->create(s_savepath);
 
     return true;
 }
@@ -212,10 +216,12 @@ bool RetroWidget::loadRom(const std::string &path) {
     // load rom file in memory
     m_game_info = {.path = path.c_str(), .data = nullptr, .size = 0, .meta = nullptr};
     if (!m_core_info.need_fullpath) {
-        m_game_info.size = p_app->getIo()->read(path, (char **) &m_game_info.data);
+        const size_t size = p_app->getIo()->getSize(path);
+        m_game_info.data = malloc(size);
+        m_game_info.size = p_app->getIo()->read(path, (char *) m_game_info.data);
         if (!m_game_info.size) {
             if (m_game_info.data) {
-                free((void *) m_game_info.data);
+                free(const_cast<void *>(m_game_info.data));
                 m_game_info.data = nullptr;
             }
             printf("RetroWidget::loadRom: could not read file: %s\n", path.c_str());
@@ -223,7 +229,7 @@ bool RetroWidget::loadRom(const std::string &path) {
         }
     }
 
-    if (!p_retro_handle->core_load_game(&m_game_info)) {
+    if (!p_retro_handle->retro_load_game(&m_game_info)) {
         printf("RetroWidget::loadRom: retro_load_game failed...\n");
         if (m_game_info.data) {
             free((void *) m_game_info.data);
@@ -233,8 +239,17 @@ bool RetroWidget::loadRom(const std::string &path) {
         return false;
     }
 
-    p_retro_handle->core_reset();
-    p_retro_handle->core_get_system_av_info(&m_av_info);
+    // set game/rom name
+    m_rom_name = c2d::Utility::baseName(m_game_info.path);
+    m_rom_name = c2d::Utility::removeExt(m_rom_name);
+
+    // load sram
+    loadSram(RETRO_MEMORY_SAVE_RAM);
+    loadSram(RETRO_MEMORY_RTC);
+
+    //p_retro_handle->retro_reset();
+
+    p_retro_handle->retro_get_system_av_info(&m_av_info);
     if (m_av_info.geometry.aspect_ratio == 0.0f) {
         m_av_info.geometry.aspect_ratio =
                 static_cast<float>(m_av_info.geometry.base_width) /
@@ -281,7 +296,11 @@ void RetroWidget::unloadRom() {
 
     if (!p_retro_handle) return;
 
-    p_retro_handle->core_unload_game();
+    // save sram if any
+    saveSram(RETRO_MEMORY_SAVE_RAM);
+    saveSram(RETRO_MEMORY_RTC);
+
+    p_retro_handle->retro_unload_game();
     if (m_game_info.data) {
         free(const_cast<void *>(m_game_info.data));
         m_game_info.data = nullptr;
@@ -303,6 +322,52 @@ void RetroWidget::unloadCore() {
     // set loaded state
     m_loaded = false;
     m_core_path.clear();
+}
+
+void RetroWidget::saveSram(uint32_t type) const {
+    if (!p_retro_handle) return;
+
+    const std::string path = s_savepath + m_rom_name + (type == RETRO_MEMORY_SAVE_RAM ? ".sav" : ".rtc");
+    printf("RetroWidget::loadSram: path: %s\n", path.c_str());
+
+    const auto size = p_retro_handle->retro_get_memory_size(type);
+    if (!size) {
+        printf("RetroWidget::saveSram: retro_get_memory_size failed\n");
+        return;
+    }
+
+    const auto sram = p_retro_handle->retro_get_memory_data(type);
+    if (!sram) {
+        printf("RetroWidget::saveSram: retro_get_memory_data failed\n");
+        return;
+    }
+
+    if (!p_app->getIo()->write(path, static_cast<const char *>(sram), size)) {
+        printf("RetroWidget::saveSram: write failed\n");
+    }
+}
+
+void RetroWidget::loadSram(uint32_t type) const {
+    if (!p_retro_handle) return;
+
+    const std::string path = s_savepath + m_rom_name + (type == RETRO_MEMORY_SAVE_RAM ? ".sav" : ".rtc");
+    printf("RetroWidget::loadSram: %s\n", path.c_str());
+
+    const auto size = p_retro_handle->retro_get_memory_size(type);
+    if (!size) {
+        printf("RetroWidget::loadSram: retro_get_memory_size failed\n");
+        return;
+    }
+
+    const auto sram = p_retro_handle->retro_get_memory_data(type);
+    if (!sram) {
+        printf("RetroWidget::loadSram: retro_get_memory_data failed\n");
+        return;
+    }
+
+    if (!p_app->getIo()->read(path, static_cast<char *>(sram), size)) {
+        printf("RetroWidget::loadSram: read failed\n");
+    }
 }
 
 void RetroWidget::setScaling() {
@@ -357,7 +422,7 @@ bool RetroWidget::onInput(Input::Player *players) {
 void RetroWidget::onUpdate() {
     if (!App::Instance()->getFiler()->isVisible()
         && !App::Instance()->getMenu()->isVisible() && p_retro_handle && m_loaded) {
-        p_retro_handle->core_run();
+        p_retro_handle->retro_run();
     }
 
     Rectangle::onUpdate();

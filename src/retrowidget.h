@@ -66,13 +66,18 @@ namespace retropico {
         App *p_app = nullptr;
         c2d::C2DAudio *p_audio = nullptr;
         c2d::C2DTexture *p_texture = nullptr;
-        core_functions_t *p_retro_handle = nullptr;
+        retro_functions_t *p_retro_handle = nullptr;
         retro_game_info m_game_info{};
         retro_system_info m_core_info{};
         retro_system_av_info m_av_info{};
         ScaleMode m_scale_mode = ScaleMode::Fit;
         std::string m_core_path;
+        std::string m_rom_name;
         bool m_loaded = false;
+
+        void saveSram(uint32_t type) const;
+
+        void loadSram(uint32_t type) const;
     };
 }
 
